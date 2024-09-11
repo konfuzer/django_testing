@@ -1,8 +1,6 @@
-# django_testing/ya_news/news/tests/test_routes.py
 import pytest
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from news.models import News, Comment
 
 User = get_user_model()
 
