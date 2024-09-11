@@ -9,11 +9,17 @@ User = get_user_model()
 class ContentTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username='testuser', password='testpass')
+            username='testuser', password='testpass'
+        )
         self.other_user = User.objects.create_user(
-            username='otheruser', password='testpass2')
+            username='otheruser', password='testpass2'
+        )
         self.note = Note.objects.create(
-            title="Test Note", text="Test Text", author=self.user, slug='test-note')
+            title="Test Note",
+            text="Test Text",
+            author=self.user,
+            slug='test-note'
+        )
 
     def test_note_in_context_of_notes_list(self):
         self.client.login(username='testuser', password='testpass')
@@ -33,5 +39,6 @@ class ContentTests(TestCase):
     def test_form_in_context_of_note_edit(self):
         self.client.login(username='testuser', password='testpass')
         response = self.client.get(
-            reverse('notes:edit', kwargs={'slug': 'test-note'}))
+            reverse('notes:edit', kwargs={'slug': 'test-note'})
+        )
         self.assertIn('form', response.context)
