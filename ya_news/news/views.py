@@ -1,10 +1,11 @@
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.views import generic
+from django.contrib.auth.models import User
 
-from .forms import CommentForm
+from .forms import CommentForm, RegisterForm
 from .models import Comment, News
 
 
@@ -91,6 +92,19 @@ class CommentBase(LoginRequiredMixin):
     def get_queryset(self):
         """Пользователь может работать только со своими комментариями."""
         return self.model.objects.filter(author=self.request.user)
+
+
+class RegisterView(generic.CreateView):
+    model = User
+    form_class = RegisterForm
+    template_name = 'registration/signup.html'
+    success_url = reverse_lazy('login')
+
+    def form_valid(self, form):
+        user = form.save(commit=False)
+        user.set_password(form.cleaned_data['password'])
+        user.save()
+        return super().form_valid(form)
 
 
 class CommentUpdate(CommentBase, generic.UpdateView):
