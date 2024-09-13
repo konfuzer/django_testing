@@ -71,7 +71,10 @@ def news(db):
 
 @pytest.fixture
 def comment(author_user, news):
-    return Comment.objects.create(news=news, author=author_user, text="Test comment")
+    return Comment.objects.create(news=news,
+                                  author=author_user,
+                                  text="Test comment"
+                                  )
 
 
 @pytest.mark.django_db
