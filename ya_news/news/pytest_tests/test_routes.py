@@ -18,7 +18,9 @@ def test_news_detail_accessible_to_anonymous(client, news_factory):
 
 
 @pytest.mark.django_db
-def test_comment_edit_delete_accessible_to_author(client, comment_factory, user_factory):
+def test_comment_edit_delete_accessible_to_author(client,
+                                                  comment_factory,
+                                                  user_factory):
     user = user_factory()
     client.force_login(user)
     comment = comment_factory(author=user)
@@ -48,7 +50,8 @@ def test_anonymous_redirected_on_comment_edit_delete(client,
 
 @pytest.mark.django_db
 def test_user_cannot_edit_or_delete_other_users_comments(client,
-                                                         comment_factory, user_factory):
+                                                         comment_factory,
+                                                         user_factory):
     other_user = user_factory()
     client.force_login(other_user)
     comment = comment_factory()
