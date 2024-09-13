@@ -73,7 +73,9 @@ def test_anonymous_cannot_see_comment_form(client, news_factory):
 
 
 @pytest.mark.django_db
-def test_authorized_user_can_see_comment_form(client, news_factory, user_factory):
+def test_authorized_user_can_see_comment_form(client,
+                                              news_factory,
+                                              user_factory):
     user = user_factory()
     client.force_login(user)
     news = news_factory()
