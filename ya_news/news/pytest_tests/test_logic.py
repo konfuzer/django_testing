@@ -83,4 +83,6 @@ def other_user_client(db, other_user):
 
 @pytest.fixture
 def comment(db, news, author_user):
-    return Comment.objects.create(news=news, user=author_user, text="Test Comment")
+    return Comment.objects.create(news=news,
+                                  user=author_user,
+                                  text="Test Comment")
