@@ -1,5 +1,9 @@
 import pytest
 from django.urls import reverse
+from django.contrib.auth.models import User
+from django.test import Client
+
+from ..models import News, Comment
 
 
 @pytest.mark.django_db
@@ -46,3 +50,37 @@ def test_cannot_edit_delete_other_users_comment(other_user_client, comment):
     edit_url = reverse('news:edit', kwargs={'pk': comment.pk})
     response = other_user_client.post(edit_url, {'text': 'Hacked Comment'})
     assert response.status_code == 403
+
+
+@pytest.fixture
+def news(db):
+    return News.objects.create(title="Test News", text="Some content")
+
+
+@pytest.fixture
+def author_user(db):
+    return User.objects.create_user(username="author", password="password")
+
+
+@pytest.fixture
+def author_client(db, author_user):
+    client = Client()
+    client.login(username="author", password="password")
+    return client
+
+
+@pytest.fixture
+def other_user(db):
+    return User.objects.create_user(username="other", password="password")
+
+
+@pytest.fixture
+def other_user_client(db, other_user):
+    client = Client()
+    client.login(username="other", password="password")
+    return client
+
+
+@pytest.fixture
+def comment(db, news, author_user):
+    return Comment.objects.create(news=news, user=author_user, text="Test Comment")
