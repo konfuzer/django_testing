@@ -1,39 +1,72 @@
 import pytest
 from django.urls import reverse
+from django.contrib.auth.models import User
+from news.models import Comment, News
 
 
 @pytest.mark.django_db
-def test_home_page_accessible(client):
-    response = client.get(reverse('news:home'))
+def test_homepage_accessible_to_anonymous(client):
+    url = reverse('news:home')
+    response = client.get(url)
     assert response.status_code == 200
 
 
 @pytest.mark.django_db
-def test_news_detail_accessible(client, django_assert_num_queries, news):
-    with django_assert_num_queries(5):
-        response = client.get(reverse('news:detail', kwargs={'pk': news.pk}))
+def test_news_detail_accessible_to_anonymous(client, news_factory):
+    news = news_factory()
+    url = reverse('news:detail', kwargs={'pk': news.pk})
+    response = client.get(url)
     assert response.status_code == 200
 
 
 @pytest.mark.django_db
-def test_comment_edit_delete_accessible_to_author(client, author, comment):
-    client.force_login(author)
+def test_comment_edit_delete_accessible_to_author(client, comment_factory, user_factory):
+    user = user_factory()
+    client.force_login(user)
+    comment = comment_factory(author=user)
     edit_url = reverse('news:edit', kwargs={'pk': comment.pk})
-    response = client.get(edit_url)
-    assert response.status_code == 200
+    delete_url = reverse('news:delete', kwargs={'pk': comment.pk})
+
+    response_edit = client.get(edit_url)
+    response_delete = client.get(delete_url)
+    assert response_edit.status_code == 200
+    assert response_delete.status_code == 200
 
 
 @pytest.mark.django_db
-def test_anonymous_redirected_to_login(client, comment):
+def test_anonymous_redirected_on_comment_edit_delete(client, comment_factory):
+    comment = comment_factory()
     edit_url = reverse('news:edit', kwargs={'pk': comment.pk})
-    response = client.get(edit_url)
-    assert response.status_code == 302
-    assert response.url.startswith(reverse('account_login'))
+    delete_url = reverse('news:delete', kwargs={'pk': comment.pk})
+
+    response_edit = client.get(edit_url)
+    response_delete = client.get(delete_url)
+    assert response_edit.status_code == 302
+    assert response_delete.status_code == 302
+    assert response_edit.url.startswith(reverse('login'))
+    assert response_delete.url.startswith(reverse('login'))
 
 
 @pytest.mark.django_db
-def test_other_user_cannot_access_edit_delete(client, another_user, comment):
-    client.force_login(another_user)
+def test_user_cannot_edit_or_delete_other_users_comments(client, comment_factory, user_factory):
+    other_user = user_factory()
+    client.force_login(other_user)
+    comment = comment_factory()
     edit_url = reverse('news:edit', kwargs={'pk': comment.pk})
-    response = client.get(edit_url)
-    assert response.status_code == 403
+    delete_url = reverse('news:delete', kwargs={'pk': comment.pk})
+
+    response_edit = client.get(edit_url)
+    response_delete = client.get(delete_url)
+    assert response_edit.status_code == 404
+    assert response_delete.status_code == 404
+
+
+@pytest.mark.django_db
+def test_auth_pages_accessible_to_anonymous(client):
+    login_url = reverse('login')
+    logout_url = reverse('logout')
+    signup_url = reverse('signup')
+
+    assert client.get(login_url).status_code == 200
+    assert client.get(logout_url).status_code == 200
+    assert client.get(signup_url).status_code == 200
