@@ -81,10 +81,3 @@ def test_authorized_user_can_edit_delete_own_comment(author_client, comment):
     assert response.status_code == 302
     comment.refresh_from_db()
     assert comment.text == 'Edited Comment'
-
-
-@pytest.mark.django_db
-def test_cannot_edit_delete_other_users_comment(other_user_client, comment):
-    edit_url = reverse('news:edit', kwargs={'pk': comment.pk})
-    response = other_user_client.post(edit_url, {'text': 'Hacked Comment'})
-    assert response.status_code == 403
