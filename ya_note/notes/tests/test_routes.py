@@ -28,7 +28,7 @@ class RouteTests(TestCase):
     def test_notes_page_redirects_anonymous(self):
         response = self.client.get(reverse('notes:list'))
         self.assertRedirects(
-            response, reverse('login') + '?next=' + reverse('notes:list')
+            response, reverse('users:login') + '?next=' + reverse('notes:list')
         )
 
     def test_notes_page_accessible_to_authenticated(self):
@@ -39,7 +39,7 @@ class RouteTests(TestCase):
     def test_add_note_redirects_anonymous(self):
         response = self.client.get(reverse('notes:add'))
         self.assertRedirects(
-            response, reverse('login') + '?next=' + reverse('notes:add')
+            response, reverse('users:login') + '?next=' + reverse('notes:add')
         )
 
     def test_add_note_accessible_to_authenticated(self):
