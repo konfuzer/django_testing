@@ -64,12 +64,12 @@ def test_news_order_on_homepage(client, news_factory):
 @pytest.mark.django_db
 def test_comment_order_on_news_detail(client, news_factory, user):
     news = news_factory()
-    comment_old = Comment.objects.create(
+    Comment.objects.create(
         news=news,
         author=user,
         created='2023-01-01'
     )
-    comment_new = Comment.objects.create(
+    Comment.objects.create(
         news=news,
         author=user,
         text="Newer Test comment",

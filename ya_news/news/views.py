@@ -1,12 +1,10 @@
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse
 from django.views import generic
-from django.contrib.auth.models import User
 
-from .forms import CommentForm, RegisterForm
+from .forms import CommentForm
 from .models import Comment, News
 
 
