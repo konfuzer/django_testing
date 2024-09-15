@@ -74,8 +74,8 @@ def test_anonymous_redirected_on_comment_edit_delete(client, comment_factory):
     response_delete = client.get(delete_url)
     assert response_edit.status_code == 302
     assert response_delete.status_code == 302
-    assert response_edit.url.startswith(reverse('login'))
-    assert response_delete.url.startswith(reverse('login'))
+    assert response_edit.url.startswith(reverse('users:login'))
+    assert response_delete.url.startswith(reverse('users:login'))
 
 
 @pytest.mark.django_db
@@ -96,9 +96,9 @@ def test_user_cannot_edit_or_delete_other_users_comments(client,
 
 @pytest.mark.django_db
 def test_auth_pages_accessible_to_anonymous(client):
-    login_url = reverse('login')
-    logout_url = reverse('logout')
-    signup_url = reverse('signup')
+    login_url = reverse('users:login')
+    logout_url = reverse('users:logout')
+    signup_url = reverse('users:signup')
 
     assert client.get(login_url).status_code == 200
     assert client.get(logout_url).status_code == 200

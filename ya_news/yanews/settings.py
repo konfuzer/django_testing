@@ -8,6 +8,8 @@ SECRET_KEY = 'django-insecure-7)dgs++2!#==aye4rd=5)c)bw0eokiyqx0hts6#t80!$c&$s+(
 
 DEBUG = True
 
+LOGIN_URL = 'login'
+
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
@@ -18,6 +20,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'news.apps.NewsConfig',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [

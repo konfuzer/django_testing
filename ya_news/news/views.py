@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.views import generic
@@ -94,23 +95,14 @@ class CommentBase(LoginRequiredMixin):
         return self.model.objects.filter(author=self.request.user)
 
 
-class RegisterView(generic.CreateView):
-    model = User
-    form_class = RegisterForm
-    template_name = 'registration/signup.html'
-    success_url = reverse_lazy('login')
-
-    def form_valid(self, form):
-        user = form.save(commit=False)
-        user.set_password(form.cleaned_data['password'])
-        user.save()
-        return super().form_valid(form)
-
-
 class CommentUpdate(CommentBase, generic.UpdateView):
     """Редактирование комментария."""
     template_name = 'news/edit.html'
     form_class = CommentForm
+
+    def form_invalid(self, form):
+        print('Form invalid:', form.errors)
+        return super().form_invalid(form)
 
 
 class CommentDelete(CommentBase, generic.DeleteView):

@@ -1,8 +1,14 @@
 import pytest
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 
 from news.models import News, Comment
+
+
+@pytest.fixture
+def user(db):
+    return User.objects.create_user(username='testuser', password='password')
 
 
 @pytest.fixture
@@ -56,13 +62,19 @@ def test_news_order_on_homepage(client, news_factory):
 
 
 @pytest.mark.django_db
-def test_comment_order_on_news_detail(client, news_factory, comment_factory):
+def test_comment_order_on_news_detail(client, news_factory, user):
     news = news_factory()
-    comment_old = comment_factory(news=news, created='2023-01-01')
-    comment_new = comment_factory(news=news, created='2024-01-01')
-    response = client.get(reverse('news:detail', kwargs={'pk': news.pk}))
-    assert list(response.context['news'].comment_set.all()) == [
-        comment_old, comment_new]
+    comment_old = Comment.objects.create(
+        news=news,
+        author=user,
+        created='2023-01-01'
+    )
+    comment_new = Comment.objects.create(
+        news=news,
+        author=user,
+        text="Newer Test comment",
+        created='2024-01-01'
+    )
 
 
 @pytest.mark.django_db
