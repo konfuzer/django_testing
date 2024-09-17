@@ -1,56 +1,8 @@
-"""
-Привет, ревьюер!🖐 Я очень много пропутил из-за отпуска,
-сейчас пытаюсь нагонять) Делал проект в спешке, пока что
-времени не хватает, чтобы разобраться полностью, углубляться буду
-чуть позже. Огромная просьба, я бы очень был благодарен
-за подробные комментарии и разъяснения к коду!🙏
-Не ругайся, если я много косячу и мало понимаю, потому что это
-действительно пока что так😅
-"""
 import pytest
 from django.urls import reverse
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User
 
-from news.models import News, Comment
-
-
-@pytest.fixture
-def user(db):
-    return User.objects.create_user(username='testuser', password='password')
-
-
-@pytest.fixture
-def news_factory(db):
-    def create_news(**kwargs):
-        return News.objects.create(
-            title=kwargs.get('title', 'Test Title'),
-            date=kwargs.get('date', '2023-01-01'),
-        )
-    return create_news
-
-
-@pytest.fixture
-def comment_factory(db):
-    def create_comment(news, **kwargs):
-        return Comment.objects.create(
-            text=kwargs.get('text', 'Test comment'),
-            created=kwargs.get('created', '2023-01-01'),
-            news=news
-        )
-    return create_comment
-
-
-@pytest.fixture
-def user_factory(db):
-    def create_user(**kwargs):
-        User = get_user_model()
-        return User.objects.create_user(
-            username=kwargs.get('username', 'testuser'),
-            email=kwargs.get('email', 'test@example.com'),
-            password=kwargs.get('password', 'password123')
-        )
-    return create_user
+from news.forms import CommentForm
+from news.models import Comment
 
 
 @pytest.mark.django_db
@@ -71,19 +23,21 @@ def test_news_order_on_homepage(client, news_factory):
 
 
 @pytest.mark.django_db
-def test_comment_order_on_news_detail(client, news_factory, user):
+def test_comment_order_on_news_detail(client, news_factory, user_factory):
+    user = user_factory()
     news = news_factory()
-    Comment.objects.create(
+    comment_old = Comment.objects.create(
         news=news,
         author=user,
-        created='2023-01-01'
+        text='Older comment',
     )
-    Comment.objects.create(
+    comment_newer = Comment.objects.create(
         news=news,
         author=user,
         text="Newer Test comment",
-        created='2024-01-01'
     )
+    comments = list(Comment.objects.filter(news=news).order_by('created'))
+    assert comments == [comment_old, comment_newer]
 
 
 @pytest.mark.django_db
@@ -94,11 +48,14 @@ def test_anonymous_cannot_see_comment_form(client, news_factory):
 
 
 @pytest.mark.django_db
-def test_authorized_user_can_see_comment_form(client,
-                                              news_factory,
-                                              user_factory):
+def test_authorized_user_can_see_comment_form(
+    client,
+    user_factory,
+    news_factory
+):
     user = user_factory()
     client.force_login(user)
     news = news_factory()
     response = client.get(reverse('news:detail', kwargs={'pk': news.pk}))
     assert 'form' in response.context
+    assert isinstance(response.context['form'], CommentForm)
