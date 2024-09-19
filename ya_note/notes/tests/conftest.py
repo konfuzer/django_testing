@@ -34,7 +34,10 @@ def base_setup(request):
     other_user = User.objects.create_user(
         username=Constants.USERNAME_2, password=Constants.PASSWORD_2)
     note = Note.objects.create(
-        title=Constants.TEST_NOTE_TITLE, text=Constants.TEST_NOTE_TEXT, author=user, slug=Constants.TEST_NOTE_SLUG
+        title=Constants.TEST_NOTE_TITLE,
+        text=Constants.TEST_NOTE_TEXT,
+        author=user,
+        slug=Constants.TEST_NOTE_SLUG
     )
 
     request.cls.user = user

@@ -43,7 +43,7 @@ class LogicTests(TestCase):
 
     def test_logged_in_user_can_create_note(self):
         note_count_before = Note.objects.count()
-        response = self.client_testuser.post(self.add_url, {
+        self.client_testuser.post(self.add_url, {
             'title': Constants.NEW_NOTE_TITLE,
             'text': Constants.NEW_NOTE_TEXT,
             'slug': Constants.NEW_NOTE_SLUG
@@ -58,7 +58,7 @@ class LogicTests(TestCase):
 
     def test_anonymous_user_cannot_create_note(self):
         note_count_before = Note.objects.count()
-        response = self.client.post(self.add_url, {
+        self.client.post(self.add_url, {
             'title': Constants.NEW_NOTE_TITLE,
             'text': Constants.NEW_NOTE_TEXT,
             'slug': Constants.NEW_NOTE_SLUG
@@ -88,7 +88,7 @@ class LogicTests(TestCase):
         self.assertEqual(note.slug, expected_slug)
 
     def test_user_can_edit_own_note(self):
-        response = self.client_testuser.post(self.edit_url, {
+        self.client_testuser.post(self.edit_url, {
             'title': Constants.EDITED_NOTE_TITLE,
             'text': Constants.EDITED_NOTE_TEXT,
             'slug': Constants.TEST_NOTE_SLUG
@@ -100,7 +100,7 @@ class LogicTests(TestCase):
         self.assertEqual(updated_note.author, self.user)
 
     def test_user_cannot_edit_other_user_note(self):
-        response = self.client_otheruser.post(self.edit_url, {
+        self.client_otheruser.post(self.edit_url, {
             'title': Constants.HACKED_NOTE_TITLE,
             'text': Constants.HACKED_NOTE_TEXT,
             'slug': Constants.TEST_NOTE_SLUG
