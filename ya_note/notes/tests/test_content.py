@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.urls import reverse
+
 from django.contrib.auth import get_user_model
 
 from notes.forms import NoteForm
@@ -8,7 +9,7 @@ from notes.models import Note
 User = get_user_model()
 
 
-class BaseContentTests(TestCase):
+class ContentTests(TestCase):
 
     @classmethod
     def setUpTestData(cls):
@@ -27,16 +28,16 @@ class BaseContentTests(TestCase):
 
         cls.notes_list_url = reverse('notes:list')
         cls.note_add_url = reverse('notes:add')
-        cls.note_edit_url = reverse('notes:edit', kwargs={'slug': 'test-note'})
+        cls.note_edit_url = reverse(
+            'notes:edit',
+            kwargs={'slug': 'test-note'}
+        )
 
         cls.client_testuser = cls.client_class()
         cls.client_testuser.login(username='testuser', password='testpass')
 
         cls.client_otheruser = cls.client_class()
         cls.client_otheruser.login(username='otheruser', password='testpass2')
-
-
-class ContentTests(BaseContentTests):
 
     def test_note_in_context_of_notes_list(self):
         response = self.client_testuser.get(self.notes_list_url)

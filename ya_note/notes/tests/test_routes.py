@@ -1,13 +1,16 @@
+from http import HTTPStatus
+
 from django.test import TestCase
 from django.urls import reverse
+
 from django.contrib.auth import get_user_model
-from http import HTTPStatus
+
 from notes.models import Note
 
 User = get_user_model()
 
 
-class BaseRouteTests(TestCase):
+class RouteTests(TestCase):
 
     @classmethod
     def setUpTestData(cls):
@@ -28,8 +31,10 @@ class BaseRouteTests(TestCase):
         cls.note_add_url = reverse('notes:add')
         cls.note_detail_url = reverse(
             'notes:detail', kwargs={'slug': 'test-note'})
-        cls.note_edit_url = reverse('notes:edit',
-                                    kwargs={'slug': 'test-note'})
+        cls.note_edit_url = reverse(
+            'notes:edit',
+            kwargs={'slug': 'test-note'}
+        )
         cls.note_delete_url = reverse(
             'notes:delete', kwargs={'slug': 'test-note'})
         cls.login_url = reverse('users:login')
@@ -40,18 +45,14 @@ class BaseRouteTests(TestCase):
         cls.client_otheruser = cls.client_class()
         cls.client_otheruser.login(username='otheruser', password='testpass2')
 
-
-class RouteTests(BaseRouteTests):
-
     def test_home_page_accessible_to_anonymous(self):
         response = self.client.get(self.home_url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_notes_page_redirects_anonymous(self):
         response = self.client.get(self.notes_list_url)
-        self.assertRedirects(
-            response, self.login_url + '?next=' + self.notes_list_url
-        )
+        self.assertRedirects(response, self.login_url
+                             + '?next=' + self.notes_list_url)
 
     def test_notes_page_accessible_to_authenticated(self):
         response = self.client_testuser.get(self.notes_list_url)
@@ -59,9 +60,8 @@ class RouteTests(BaseRouteTests):
 
     def test_add_note_redirects_anonymous(self):
         response = self.client.get(self.note_add_url)
-        self.assertRedirects(
-            response, self.login_url + '?next=' + self.note_add_url
-        )
+        self.assertRedirects(response, self.login_url
+                             + '?next=' + self.note_add_url)
 
     def test_add_note_accessible_to_authenticated(self):
         response = self.client_testuser.get(self.note_add_url)
