@@ -1,15 +1,21 @@
 import pytest
 import uuid
 
-from django.test import Client
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.test import Client
 from django.urls import reverse
 
-from news.forms import BAD_WORDS
-from news.models import News, Comment
-from yanews.settings import NEWS_COUNT_ON_HOME_PAGE
+from news.models import Comment, News
+
 
 User = get_user_model()
+
+
+class Constants:
+    COMMENT_TEXT = 'Comment_text'
+    EDITED_COMMENT = 'Edited Comment'
+    OTHER_COMMENT = 'Other User Comment'
 
 
 @pytest.fixture
@@ -18,22 +24,20 @@ def user(db):
 
 
 @pytest.fixture
-def urls():
+def urls(setup_news):
     return {
-        'news_detail': reverse('news:detail', kwargs={'pk': 1}),
+        'home': reverse('news:home'),
+        'news_detail': reverse('news:detail', kwargs={'pk': setup_news.pk}),
         'users_login': reverse('users:login'),
         'users_logout': reverse('users:logout'),
         'users_signup': reverse('users:signup'),
         'news_edit': reverse('news:edit', kwargs={'pk': 1}),
         'news_delete': reverse('news:delete', kwargs={'pk': 1}),
-        'home': reverse('news:home'),
     }
 
 
 @pytest.fixture
-def delete_comment_url(comment_factory, news_factory):
-    news = news_factory()
-    comment = comment_factory(news=news)
+def delete_comment_url(comment):
     return reverse('news:delete', kwargs={'pk': comment.pk})
 
 
@@ -46,19 +50,7 @@ def delete_url(comment):
 
 
 @pytest.fixture
-def detail_url(news):
-    return reverse('news:detail', kwargs={'pk': news.pk})
-
-
-@pytest.fixture
-def edit_comment_url(comment_factory, news_factory):
-    news = news_factory()
-    comment = comment_factory(news=news)
-    return reverse('news:edit', kwargs={'pk': comment.pk})
-
-
-@pytest.fixture
-def edit_url(other_comment):
+def edit_other_comment_url(other_comment):
     return reverse('news:edit', kwargs={'pk': other_comment.pk})
 
 
@@ -97,19 +89,19 @@ def user_factory():
 
 
 @pytest.fixture
-def ordered_news(db, news_factory):
-    news1 = news_factory(date='2022-01-01')
-    news2 = news_factory(date='2023-01-01')
+def ordered_news(setup_news):
+    news1 = News.objects.create(date='2023-01-01')
+    news2 = setup_news
     return news1, news2
 
 
 @pytest.fixture
-def comments_for_news(news, user_factory):
+def comments_for_news(setup_news, user_factory):
     user = user_factory()
     comment_old = Comment.objects.create(
-        news=news, author=user, text='Older comment')
+        news=setup_news, author=user, text='Older comment')
     comment_newer = Comment.objects.create(
-        news=news, author=user, text="Newer Test comment")
+        news=setup_news, author=user, text="Newer Test comment")
     return comment_old, comment_newer
 
 
@@ -143,7 +135,7 @@ def other_user_client(db, other_user):
 
 
 @pytest.fixture
-def comment(db, news, author_user):
+def comment(news, author_user):
     return Comment.objects.create(
         news=news,
         author=author_user,
@@ -153,14 +145,14 @@ def comment(db, news, author_user):
 
 @pytest.fixture
 def multiple_news(news_factory):
-    def create_multiple_news(count=NEWS_COUNT_ON_HOME_PAGE):
+    def create_multiple_news(count=settings.NEWS_COUNT_ON_HOME_PAGE):
         news_list = [news_factory() for _ in range(count)]
         return news_list
     return create_multiple_news
 
 
 @pytest.fixture
-def other_comment(news, other_user):
+def other_comment(db, news, other_user):
     return Comment.objects.create(
         news=news,
         author=other_user,
@@ -169,40 +161,17 @@ def other_comment(news, other_user):
 
 
 @pytest.fixture
-def comment_text():
-    return "This is a test comment"
-
-
-@pytest.fixture
-def updated_comment_text():
-    return "Edited Comment"
-
-
-@pytest.fixture
-def other_comment_text():
-    return "Other User Comment"
-
-
-@pytest.fixture
-def bad_words():
-    return BAD_WORDS
-
-
-@pytest.fixture
 def setup_news(db):
-    news = News.objects.create(title='Test News', text='Some content')
-    return news
+    return News.objects.create(title='Test News', text='Some content')
 
 
 @pytest.fixture
-def setup_comment(client, user_factory, comment_factory):
+def setup_comment(client, user_factory, comment_factory, news):
     user = user_factory(username='author_user')
     client.force_login(user)
-    news = News.objects.create(title='Test News', text='Some content')
     comment = comment_factory(news=news, author=user)
     return {
         'user': user,
-        'news': news,
         'comment': comment,
         'edit_url': reverse('news:edit', kwargs={'pk': comment.pk}),
         'delete_url': reverse('news:delete', kwargs={'pk': comment.pk}),
@@ -210,14 +179,10 @@ def setup_comment(client, user_factory, comment_factory):
 
 
 @pytest.fixture
-def other_user_comment(client, user_factory, comment_factory):
-    other_user = user_factory(username='other_user')
+def other_user_comment(client, other_user, comment_factory, news):
     client.force_login(other_user)
-    news = News.objects.create(title='Test News', text='Some content')
-    comment = comment_factory(news=news)
+    comment = comment_factory(news=news, author=other_user)
     return {
-        'other_user': other_user,
-        'news': news,
         'comment': comment,
         'edit_url': reverse('news:edit', kwargs={'pk': comment.pk}),
         'delete_url': reverse('news:delete', kwargs={'pk': comment.pk}),

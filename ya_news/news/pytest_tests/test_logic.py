@@ -1,76 +1,73 @@
 import pytest
-
 from http import HTTPStatus
 
-from news.forms import WARNING
+from conftest import Constants
+from news.forms import BAD_WORDS, WARNING
 from news.models import Comment
 
 
-@pytest.mark.django_db
+pytestmark = pytest.mark.django_db
+
+
 def test_anonymous_user_cannot_submit_comment(
     client,
     news,
     urls,
-    comment_text
 ):
     initial_comment_count = Comment.objects.filter(news=news).count()
 
-    response = client.post(urls['news_detail'], {'text': comment_text})
+    response = client.post(urls['news_detail'], {
+                           'text': Constants.COMMENT_TEXT})
 
     assert response.status_code == HTTPStatus.FOUND
     assert response.url.startswith(urls['users_login'])
     assert Comment.objects.filter(news=news).count() == initial_comment_count
 
 
-@pytest.mark.django_db
 def test_authorized_user_can_submit_comment(
     author_client,
     author_user,
-    news,
-    detail_url,
-    comment_text
+    setup_news,
+    urls
 ):
-    initial_count = Comment.objects.filter(news=news).count()
+    Comment.objects.all().delete()
 
-    response = author_client.post(detail_url, {'text': comment_text})
-
+    initial_count = Comment.objects.filter(news=setup_news).count()
+    response = author_client.post(
+        urls['news_detail'], {'text': Constants.COMMENT_TEXT})
     assert response.status_code == HTTPStatus.FOUND
-
-    assert Comment.objects.filter(news=news).count() == initial_count + 1
-
-    last_comment = Comment.objects.filter(news=news).latest('created')
-    assert last_comment.text == comment_text
+    assert Comment.objects.filter(news=setup_news).count() == initial_count + 1
+    last_comment = Comment.objects.get()
+    assert last_comment.text == Constants.COMMENT_TEXT
     assert last_comment.author == author_user
-    assert last_comment.news == news
+    assert last_comment.news == setup_news
 
 
-@pytest.mark.django_db
 def test_cannot_submit_comment_with_bad_words(
     author_client,
-    detail_url,
-    bad_words
+    urls
 ):
-    response = author_client.post(detail_url, {'text': bad_words})
+    response = author_client.post(urls['news_detail'], {'text': BAD_WORDS})
     assert response.status_code == HTTPStatus.OK
     assert WARNING in response.content.decode()
 
 
 @pytest.mark.django_db
-def test_authorized_user_cannot_edit_delete_other_comment(
+def test_authorized_user_cannot_edit_other_comment(
     author_client,
     other_comment,
-    edit_url,
-    other_comment_text,
-    updated_comment_text
+    edit_other_comment_url
 ):
     assert Comment.objects.filter(pk=other_comment.pk).exists()
-    response = author_client.post(edit_url, {'text': updated_comment_text})
+    response = author_client.post(edit_other_comment_url, {
+                                  'text': Constants.EDITED_COMMENT})
     assert response.status_code == HTTPStatus.NOT_FOUND
-    other_comment.refresh_from_db()
-    assert other_comment.text == other_comment_text
+    retrieved_comment = Comment.objects.get(pk=other_comment.pk)
+    assert retrieved_comment.text == Constants.OTHER_COMMENT
+    assert retrieved_comment.author == other_comment.author
+    assert retrieved_comment.news == other_comment.news
 
 
-@pytest.mark.django_db
 def test_authorized_user_can_delete_own_comment(
         author_client,
         delete_url,
@@ -82,3 +79,27 @@ def test_authorized_user_can_delete_own_comment(
     assert response.status_code == HTTPStatus.FOUND
     assert Comment.objects.filter(
         news=comment.news).count() == initial_count - 1
+
+
+def test_authorized_user_can_edit_own_comment(
+    author_client,
+    comment,
+    urls,
+):
+
+    response = author_client.post(
+        urls['news_edit'], {'text': Constants.EDITED_COMMENT})
+    assert response.status_code == HTTPStatus.FOUND
+    retrieved_comment = Comment.objects.get(pk=comment.pk)
+    assert retrieved_comment.text == Constants.EDITED_COMMENT
+
+
+def test_authorized_user_cannot_delete_other_comment(
+    author_client, other_comment, delete_url
+):
+    initial_count = Comment.objects.filter(news=other_comment.news).count()
+
+    response = author_client.post(delete_url)
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert Comment.objects.filter(
+        news=other_comment.news).count() == initial_count

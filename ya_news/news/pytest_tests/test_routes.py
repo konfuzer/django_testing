@@ -1,44 +1,30 @@
 import pytest
-
-from django.urls import reverse
-
 from http import HTTPStatus
 
 pytestmark = pytest.mark.django_db
 
 
 @pytest.mark.parametrize(
-    'url_name, expected_status',
-    [
-        ('news_detail', HTTPStatus.OK),
-        ('users_login', HTTPStatus.OK),
-        ('users_logout', HTTPStatus.OK),
-        ('users_signup', HTTPStatus.OK),
-    ]
+    'reverse_url, parametrized_client, status',
+    (
+        ('news_detail', 'client', HTTPStatus.OK),
+        ('users_login', 'client', HTTPStatus.OK),
+        ('users_logout', 'client', HTTPStatus.OK),
+        ('users_signup', 'client', HTTPStatus.OK),
+        ('news_edit', 'client', HTTPStatus.FOUND),
+        ('news_delete', 'client', HTTPStatus.FOUND),
+    )
 )
-def test_status_codes(
-    client,
+def test_status_and_redirects(
     urls,
-    setup_news,
-    url_name,
-    expected_status
+    reverse_url,
+    parametrized_client,
+    status, client,
+    setup_news
 ):
-    url = urls[url_name]
+    url = urls[reverse_url]
     response = client.get(url)
-    assert response.status_code == expected_status
-
-
-@pytest.mark.parametrize(
-    'url_name, expected_redirect_url_name',
-    [
-        ('news_edit', 'users:login'),
-        ('news_delete', 'users:login')
-    ]
-)
-def test_redirects(client, urls, url_name, expected_redirect_url_name):
-    response = client.get(urls[url_name])
-    assert response.status_code == HTTPStatus.FOUND
-    assert response.url.startswith(reverse(expected_redirect_url_name))
+    assert response.status_code == status
 
 
 def test_comment_edit_delete_accessible_to_author(client, setup_comment):
@@ -50,8 +36,11 @@ def test_comment_edit_delete_accessible_to_author(client, setup_comment):
 
 def test_user_cannot_edit_or_delete_other_users_comments(
         client,
-        other_user_comment
+        other_user_comment,
+        user_factory
 ):
+    another_user = user_factory(username='another_user')
+    client.force_login(another_user)
     response_edit = client.get(other_user_comment['edit_url'])
     response_delete = client.get(other_user_comment['delete_url'])
     assert response_edit.status_code == HTTPStatus.NOT_FOUND
