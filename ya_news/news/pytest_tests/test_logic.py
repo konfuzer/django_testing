@@ -27,20 +27,20 @@ def test_anonymous_user_cannot_submit_comment(
 def test_authorized_user_can_submit_comment(
     author_client,
     author_user,
-    setup_news,
+    news,
     urls
 ):
     Comment.objects.all().delete()
 
-    initial_count = Comment.objects.filter(news=setup_news).count()
+    initial_count = Comment.objects.filter(news=news).count()
     response = author_client.post(
         urls['news_detail'], {'text': Constants.COMMENT_TEXT})
     assert response.status_code == HTTPStatus.FOUND
-    assert Comment.objects.filter(news=setup_news).count() == initial_count + 1
+    assert Comment.objects.filter(news=news).count() == initial_count + 1
     last_comment = Comment.objects.get()
     assert last_comment.text == Constants.COMMENT_TEXT
     assert last_comment.author == author_user
-    assert last_comment.news == setup_news
+    assert last_comment.news == news
 
 
 def test_cannot_submit_comment_with_bad_words(
@@ -52,14 +52,13 @@ def test_cannot_submit_comment_with_bad_words(
     assert WARNING in response.content.decode()
 
 
-@pytest.mark.django_db
 def test_authorized_user_cannot_edit_other_comment(
     author_client,
     other_comment,
-    edit_other_comment_url
+    urls
 ):
     assert Comment.objects.filter(pk=other_comment.pk).exists()
-    response = author_client.post(edit_other_comment_url, {
+    response = author_client.post(urls['edit_other'], {
                                   'text': Constants.EDITED_COMMENT})
     assert response.status_code == HTTPStatus.NOT_FOUND
     retrieved_comment = Comment.objects.get(pk=other_comment.pk)
@@ -70,12 +69,12 @@ def test_authorized_user_cannot_edit_other_comment(
 
 def test_authorized_user_can_delete_own_comment(
         author_client,
-        delete_url,
-        comment
+        comment,
+        urls
 ):
     initial_count = Comment.objects.filter(news=comment.news).count()
 
-    response = author_client.post(delete_url['url'])
+    response = author_client.post(urls['news_delete'])
     assert response.status_code == HTTPStatus.FOUND
     assert Comment.objects.filter(
         news=comment.news).count() == initial_count - 1
@@ -86,20 +85,27 @@ def test_authorized_user_can_edit_own_comment(
     comment,
     urls,
 ):
-
     response = author_client.post(
-        urls['news_edit'], {'text': Constants.EDITED_COMMENT})
+        urls['news_edit'], {'text': Constants.EDITED_COMMENT}
+    )
+
     assert response.status_code == HTTPStatus.FOUND
+
     retrieved_comment = Comment.objects.get(pk=comment.pk)
+
+    assert retrieved_comment.pk == comment.pk
+    assert retrieved_comment.news == comment.news
+    assert retrieved_comment.author == comment.author
+    assert retrieved_comment.created == comment.created
     assert retrieved_comment.text == Constants.EDITED_COMMENT
 
 
 def test_authorized_user_cannot_delete_other_comment(
-    author_client, other_comment, delete_url
+    author_client, other_comment, urls
 ):
     initial_count = Comment.objects.filter(news=other_comment.news).count()
 
-    response = author_client.post(delete_url)
+    response = author_client.post(urls['delete_other'])
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert Comment.objects.filter(
         news=other_comment.news).count() == initial_count

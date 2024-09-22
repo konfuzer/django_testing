@@ -19,39 +19,21 @@ class Constants:
 
 
 @pytest.fixture
-def user(db):
-    return User.objects.create_user(username='testuser', password='password')
-
-
-@pytest.fixture
-def urls(setup_news):
+def urls(news, comment, other_comment):
     return {
         'home': reverse('news:home'),
-        'news_detail': reverse('news:detail', kwargs={'pk': setup_news.pk}),
+        'news_detail': reverse('news:detail', kwargs={'pk': news.pk}),
         'users_login': reverse('users:login'),
         'users_logout': reverse('users:logout'),
         'users_signup': reverse('users:signup'),
-        'news_edit': reverse('news:edit', kwargs={'pk': 1}),
-        'news_delete': reverse('news:delete', kwargs={'pk': 1}),
+        'news_edit': reverse('news:edit', kwargs={'pk': comment.pk}),
+        'news_delete': reverse('news:delete', kwargs={'pk': comment.pk}),
+        'edit_other': reverse('news:edit', kwargs={'pk': other_comment.pk}),
+        'delete_other': reverse(
+            'news:delete',
+            kwargs={'pk': other_comment.pk}
+        ),
     }
-
-
-@pytest.fixture
-def delete_comment_url(comment):
-    return reverse('news:delete', kwargs={'pk': comment.pk})
-
-
-@pytest.fixture
-def delete_url(comment):
-    return {
-        'url': reverse('news:delete', kwargs={'pk': comment.pk}),
-        'comment': comment
-    }
-
-
-@pytest.fixture
-def edit_other_comment_url(other_comment):
-    return reverse('news:edit', kwargs={'pk': other_comment.pk})
 
 
 @pytest.fixture
@@ -63,6 +45,13 @@ def news_factory(db):
             date=kwargs.get('date', '2023-01-01'),
         )
     return create_news
+
+
+@pytest.fixture
+def multiple_news(news_factory):
+    def create_multiple_news(count=settings.NEWS_COUNT_ON_HOME_PAGE):
+        return [news_factory() for _ in range(count)]
+    return create_multiple_news
 
 
 @pytest.fixture
@@ -79,7 +68,6 @@ def comment_factory(user_factory):
 def user_factory():
     def create_user(username=None, password='password123'):
         if username is None:
-            # Генерируем уникальное имя пользователя
             username = f'testuser_{uuid.uuid4()}'
         return User.objects.create_user(
             username=username,
@@ -89,19 +77,12 @@ def user_factory():
 
 
 @pytest.fixture
-def ordered_news(setup_news):
-    news1 = News.objects.create(date='2023-01-01')
-    news2 = setup_news
-    return news1, news2
-
-
-@pytest.fixture
-def comments_for_news(setup_news, user_factory):
+def comments_for_news(news, user_factory):
     user = user_factory()
     comment_old = Comment.objects.create(
-        news=setup_news, author=user, text='Older comment')
+        news=news, author=user, text='Older comment')
     comment_newer = Comment.objects.create(
-        news=setup_news, author=user, text="Newer Test comment")
+        news=news, author=user, text="Newer Test comment")
     return comment_old, comment_newer
 
 
@@ -116,22 +97,8 @@ def author_user(db):
 
 
 @pytest.fixture
-def author_client(db, author_user):
-    client = Client()
-    client.login(username="author", password="password")
-    return client
-
-
-@pytest.fixture
 def other_user(db):
     return User.objects.create_user(username="other", password="password")
-
-
-@pytest.fixture
-def other_user_client(db, other_user):
-    client = Client()
-    client.login(username="other", password="password")
-    return client
 
 
 @pytest.fixture
@@ -144,14 +111,6 @@ def comment(news, author_user):
 
 
 @pytest.fixture
-def multiple_news(news_factory):
-    def create_multiple_news(count=settings.NEWS_COUNT_ON_HOME_PAGE):
-        news_list = [news_factory() for _ in range(count)]
-        return news_list
-    return create_multiple_news
-
-
-@pytest.fixture
 def other_comment(db, news, other_user):
     return Comment.objects.create(
         news=news,
@@ -161,29 +120,7 @@ def other_comment(db, news, other_user):
 
 
 @pytest.fixture
-def setup_news(db):
-    return News.objects.create(title='Test News', text='Some content')
-
-
-@pytest.fixture
-def setup_comment(client, user_factory, comment_factory, news):
-    user = user_factory(username='author_user')
-    client.force_login(user)
-    comment = comment_factory(news=news, author=user)
-    return {
-        'user': user,
-        'comment': comment,
-        'edit_url': reverse('news:edit', kwargs={'pk': comment.pk}),
-        'delete_url': reverse('news:delete', kwargs={'pk': comment.pk}),
-    }
-
-
-@pytest.fixture
-def other_user_comment(client, other_user, comment_factory, news):
-    client.force_login(other_user)
-    comment = comment_factory(news=news, author=other_user)
-    return {
-        'comment': comment,
-        'edit_url': reverse('news:edit', kwargs={'pk': comment.pk}),
-        'delete_url': reverse('news:delete', kwargs={'pk': comment.pk}),
-    }
+def author_client(db, author_user):
+    client = Client()
+    client.login(username="author", password="password")
+    return client

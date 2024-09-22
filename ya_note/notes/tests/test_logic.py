@@ -1,12 +1,7 @@
 from pytils.translit import slugify
 
-from django.contrib.auth import get_user_model
-
 from notes.models import Note
 from notes.tests.conftest import BaseTestCase
-
-
-User = get_user_model()
 
 
 class LogicTests(BaseTestCase):
